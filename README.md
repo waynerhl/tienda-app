@@ -146,3 +146,51 @@ Prueba manual con tu cuenta autorizada:
 5. Cancela un formulario y comprueba que no crea un registro.
 
 Esta etapa no cambia el esquema SQL ni habilita todavía compras o ventas.
+
+## Módulo de Compras
+
+Disponible para ADMINISTRADOR e INVENTARIO. Abre **Compras** en la navegación.
+
+1. Selecciona un proveedor o créalo con **Nuevo proveedor**.
+2. Escribe la factura o conserva la referencia generada. La combinación
+   proveedor/referencia es única y protege frente a registros duplicados.
+3. Elige la forma de pago. CREDITO crea una cuenta por pagar y permite una fecha
+   límite opcional. Los abonos se implementarán en otra etapa.
+4. Busca productos activos por nombre o código exacto y agrégalos uno a uno.
+5. Escribe la cantidad en unidades y el costo POR UNIDAD. Para una caja de
+   12 unidades que cuesta Q60, usa cantidad 12 y costo Q5.
+6. Si el producto controla lotes, reparte la cantidad entre uno o varios lotes.
+   Número y vencimiento son opcionales; las cantidades son obligatorias y su
+   suma debe coincidir. No se admiten vencimientos anteriores a hoy en Guatemala.
+7. Pulsa **Registrar compra** una vez. El recibo confirma el ID y total; el
+   historial muestra las últimas 30 compras. Vuelve a Productos para verificar
+   el aumento de existencias.
+
+La compra, detalles, lotes, movimientos y cuenta por pagar se registran mediante
+`registrar_compra()` en una transacción. React no modifica existencia ni costo
+directamente. El total se calcula en centavos en el cliente y se recalcula en
+PostgreSQL. El precio de venta no cambia al registrar una compra.
+
+Si falla la conexión, conserva la referencia y revisa el historial antes de
+reintentar. Un mensaje de duplicado requiere revisar la compra existente, no
+cambiar su referencia para repetirla. La pestaña conserva el borrador al cambiar
+entre Productos y Compras, pero una recarga de página descarta un borrador sin guardar.
+
+### SQL y validación
+
+`database/09_compras.sql` corrige las referencias de esquema de las funciones
+auxiliares, fija su search_path y actualiza la RPC de compras conservando sus
+comprobaciones de usuario y rol. La RPC interpreta fechas en America/Guatemala.
+Para una instalación nueva, ejecuta este archivo después de `08_permissions.sql`.
+En el proyecto de Wayner ya se aplicó durante esta etapa.
+
+- Código: `npm run build` y `npm run lint`.
+- Validaciones de compras: `node --test tests/compraValidation.test.cjs`.
+- Prueba integral SQL: `tests/compras_rollback.sql`, desde SQL Editor como postgres.
+  Crea fixtures, comprueba contado/crédito/lotes/duplicados/autenticación y termina
+  con ROLLBACK. No deja registros, aunque las secuencias pueden presentar saltos.
+- Prueba desde la app: registra una compra real de pocas unidades y comprueba
+  referencia, total, último costo y existencias. Al pulsar Registrar, sí se guarda.
+
+Las ventas, anulaciones y pagos de deudas siguen pendientes de interfaz y de sus
+pruebas específicas. Los datos anteriores no se eliminan ni se corrigen automáticamente.

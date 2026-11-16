@@ -3,11 +3,14 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase, supabaseConfigurationError } from "./lib/supabase";
 import Login from "./pages/Login";
 import Productos from "./pages/Productos";
+import Compras from "./pages/Compras";
 import "./App.css";
 
 type Profile = { nombre: string; activo: boolean; rol: string };
 
 function SignedIn({ session }: { session: Session }) {
+  const [tab, setTab] = useState("productos");
+  const [catalogVersion, setCatalogVersion] = useState(0);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -118,11 +121,46 @@ function SignedIn({ session }: { session: Session }) {
             </p>
           </section>
         ) : (
-          <Productos
-            canManage={
-              profile.rol === "ADMINISTRADOR" || profile.rol === "INVENTARIO"
-            }
-          />
+          <>
+            <nav className="module-nav" aria-label="Módulos de la tienda">
+              <button
+                type="button"
+                className={tab === "productos" ? "selected" : "secondary"}
+                aria-current={tab === "productos" ? "page" : undefined}
+                onClick={() => setTab("productos")}
+              >
+                Productos
+              </button>
+              {(profile.rol === "ADMINISTRADOR" ||
+                profile.rol === "INVENTARIO") && (
+                <button
+                  type="button"
+                  className={tab === "compras" ? "selected" : "secondary"}
+                  aria-current={tab === "compras" ? "page" : undefined}
+                  onClick={() => setTab("compras")}
+                >
+                  Compras
+                </button>
+              )}
+            </nav>
+            <div hidden={tab !== "productos"}>
+              <Productos
+                key={catalogVersion}
+                canManage={
+                  profile.rol === "ADMINISTRADOR" ||
+                  profile.rol === "INVENTARIO"
+                }
+              />
+            </div>
+            {(profile.rol === "ADMINISTRADOR" ||
+              profile.rol === "INVENTARIO") && (
+              <div hidden={tab !== "compras"}>
+                <Compras
+                  onRegistered={() => setCatalogVersion((value) => value + 1)}
+                />
+              </div>
+            )}
+          </>
         )}
       </main>
       <footer className="app-footer">Mi tienda · Control de inventario</footer>
