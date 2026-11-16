@@ -73,3 +73,49 @@ export default defineConfig([
 ])
 
 ```
+
+## Primera interfaz conectada a Supabase
+
+La aplicación permite iniciar sesión con una cuenta existente de Supabase Auth,
+verifica que tenga un perfil activo en `public.usuarios` y consulta los productos
+respetando los permisos RLS. Incluye búsqueda por nombre, paginación de 25
+productos, alertas de stock y cierre de sesión en este dispositivo.
+
+### Configuración local
+
+1. Instala las dependencias con `npm ci`.
+2. Si ya tienes `.env.local`, conserva sus valores y revisa estos nombres:
+   - `VITE_SUPABASE_URL`: URL del proyecto.
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`: clave publicable del proyecto.
+   - También se admite `VITE_SUPABASE_ANON_KEY` para una clave anon existente.
+3. Si aún no tienes `.env.local`, copia `.env.example` y completa la clave
+   publicable desde Supabase → Settings → API Keys.
+4. Ejecuta `npm run dev` y abre la dirección que muestre Vite.
+5. Ingresa con el correo y contraseña de un usuario de **tu aplicación**,
+   creado en Supabase Auth. No son necesariamente los de tu cuenta del panel.
+   Su UUID debe coincidir con `usuarios.id_usuario`; necesita un rol asignado
+   y `activo = true`.
+
+No pongas una clave `service_role` ni `sb_secret_` en variables `VITE_*`.
+No subas `.env.local` a Git. Reinicia Vite después de cambiar sus variables.
+Las pantallas de sesión no reemplazan las políticas RLS: la autorización real
+se mantiene en Supabase. No se incluye registro público de usuarios.
+
+### Comprobación manual
+
+- Sin configuración, debe aparecer una indicación para completar `.env.local`.
+- Con configuración, debe aparecer el formulario de ingreso.
+- Una contraseña incorrecta debe mostrar un mensaje y permitir reintentar.
+- Con una cuenta autorizada, deben aparecer los productos reales de Supabase.
+- Busca un producto por nombre, prueba una búsqueda sin resultados y actualiza.
+- Recarga: la sesión debe mantenerse. Cierra sesión: debe volver al formulario.
+- Un perfil inexistente o inactivo debe mostrar «Acceso pendiente».
+
+Validación de código: `npm run build` y `npm run lint`.
+
+### Alcance de esta etapa
+
+Esta pantalla consulta productos; todavía no registra compras, ventas ni abonos.
+Antes de habilitar esas operaciones hay que verificar los triggers y funciones
+SQL, el tratamiento de lotes vencidos y la consistencia de los datos de prueba.
+Los indicadores de rentabilidad requieren definir el costo histórico vendido.
