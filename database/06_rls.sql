@@ -1472,3 +1472,29 @@ USING (
 
 
 COMMIT;
+
+DROP POLICY IF EXISTS ventas_insert_admin_cajero
+ON ventas;
+
+
+DROP POLICY IF EXISTS detalle_ventas_insert_admin_cajero
+ON detalle_ventas;
+
+
+DROP POLICY IF EXISTS compras_insert_admin_inventario
+ON compras;
+
+
+
+DROP POLICY IF EXISTS detalle_compras_insert_admin_inventario
+ON detalle_compras;
+
+DROP POLICY IF EXISTS lotes_insert_admin_inventario
+ON lotes;
+
+
+DROP POLICY IF EXISTS movimientos_insert_roles
+ON movimientos_inventario;
+
+DROP POLICY IF EXISTS movimientos_insert_authenticated_roles
+ON movimientos_inventario;

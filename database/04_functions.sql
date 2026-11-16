@@ -966,3 +966,93 @@ AS $$
           AND r.nombre = ANY(p_roles)
     );
 $$;
+
+CREATE OR REPLACE FUNCTION public.fn_stock_lote(
+    p_lote_id INTEGER
+)
+RETURNS INTEGER
+LANGUAGE sql
+STABLE
+SET search_path = ''
+AS $$
+    SELECT COALESCE(
+        SUM(
+            m.cantidad * tm.factor
+        ),
+        0
+    )::INTEGER
+    FROM public.movimientos_inventario m
+
+    JOIN public.tipos_movimientos tm
+        ON tm.id_tipo_movimiento =
+           m.tipo_movimiento_id
+
+    WHERE m.lote_id = p_lote_id;
+$$;
+
+CREATE OR REPLACE FUNCTION public.fn_validar_stock_lote()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+DECLARE
+    v_factor SMALLINT;
+    v_stock_lote INTEGER;
+BEGIN
+
+    /*
+       Si el movimiento no usa lote,
+       aquí no hay nada que validar.
+    */
+
+    IF NEW.lote_id IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+
+    /*
+       Bloqueamos el lote durante la operación.
+    */
+
+    PERFORM 1
+    FROM public.lotes
+    WHERE id_lote = NEW.lote_id
+    FOR UPDATE;
+
+
+    SELECT factor
+    INTO v_factor
+    FROM public.tipos_movimientos
+    WHERE id_tipo_movimiento =
+          NEW.tipo_movimiento_id;
+
+
+    /*
+       Solamente necesitamos comprobar stock
+       cuando el movimiento es una salida.
+    */
+
+    IF v_factor = -1 THEN
+
+        v_stock_lote :=
+            public.fn_stock_lote(
+                NEW.lote_id
+            );
+
+
+        IF NEW.cantidad > v_stock_lote THEN
+
+            RAISE EXCEPTION
+                'Stock insuficiente en lote %. Disponible: %, solicitado: %',
+                NEW.lote_id,
+                v_stock_lote,
+                NEW.cantidad;
+
+        END IF;
+
+    END IF;
+
+
+    RETURN NEW;
+END;
+$$;

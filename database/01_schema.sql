@@ -233,6 +233,7 @@ CREATE TABLE lotes (
         DEFAULT CURRENT_DATE,
 
     fecha_vencimiento DATE,
+    controla_lotes BOOLEAN NOT NULL DEFAULT FALSE,
 
     CONSTRAINT pk_lotes
         PRIMARY KEY (id_lote),

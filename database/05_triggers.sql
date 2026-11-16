@@ -78,3 +78,9 @@ BEFORE INSERT OR UPDATE OF forma_pago_id
 ON pagos_cuentas_por_pagar
 FOR EACH ROW
 EXECUTE FUNCTION fn_validar_forma_pago_abono();
+
+CREATE TRIGGER trg_validar_stock_lote
+BEFORE INSERT
+ON public.movimientos_inventario
+FOR EACH ROW
+EXECUTE FUNCTION public.fn_validar_stock_lote();
