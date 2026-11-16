@@ -5,7 +5,7 @@ import Login from "./pages/Login";
 import Productos from "./pages/Productos";
 import "./App.css";
 
-type Profile = { nombre: string; activo: boolean };
+type Profile = { nombre: string; activo: boolean; rol: string };
 
 function SignedIn({ session }: { session: Session }) {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -24,13 +24,31 @@ function SignedIn({ session }: { session: Session }) {
       try {
         const { data, error } = await supabase
           .from("usuarios")
-          .select("nombre,activo")
+          .select("nombre,activo,rol_id")
           .eq("id_usuario", session.user.id)
           .abortSignal(controller.signal)
           .maybeSingle();
         if (controller.signal.aborted) return;
         if (error) throw error;
-        setProfile(data);
+        if (data?.activo) {
+          const { data: role, error: roleError } = await supabase
+            .from("roles")
+            .select("nombre")
+            .eq("id_rol", data.rol_id)
+            .abortSignal(controller.signal)
+            .single();
+          if (controller.signal.aborted) return;
+          if (roleError) throw roleError;
+          setProfile({
+            nombre: data.nombre,
+            activo: data.activo,
+            rol: role.nombre,
+          });
+        } else {
+          setProfile(
+            data ? { nombre: data.nombre, activo: false, rol: "" } : null,
+          );
+        }
       } catch {
         if (!controller.signal.aborted)
           setError(
@@ -100,7 +118,11 @@ function SignedIn({ session }: { session: Session }) {
             </p>
           </section>
         ) : (
-          <Productos />
+          <Productos
+            canManage={
+              profile.rol === "ADMINISTRADOR" || profile.rol === "INVENTARIO"
+            }
+          />
         )}
       </main>
       <footer className="app-footer">Mi tienda · Control de inventario</footer>

@@ -119,3 +119,30 @@ Esta pantalla consulta productos; todavía no registra compras, ventas ni abonos
 Antes de habilitar esas operaciones hay que verificar los triggers y funciones
 SQL, el tratamiento de lotes vencidos y la consistencia de los datos de prueba.
 Los indicadores de rentabilidad requieren definir el costo histórico vendido.
+
+## Catálogo editable
+
+Los perfiles activos ADMINISTRADOR e INVENTARIO pueden agregar y editar
+productos. El CAJERO conserva la consulta del catálogo. Estos controles de
+interfaz acompañan las políticas RLS y los permisos SQL existentes.
+
+- Campos: nombre, categoría, código de barras opcional, precio de venta,
+  existencia mínima y estado activo.
+- Al crear se define si utiliza control por lotes. Esa opción queda bloqueada
+  al editar, de acuerdo con los permisos actuales.
+- La existencia inicial es cero. No se envían existencia ni último costo en
+  estas operaciones; las entradas se registrarán mediante compras.
+- El código de barras se conserva como texto, incluidos los ceros iniciales.
+- Un código vacío se guarda como NULL. Los códigos duplicados muestran un error.
+- El precio admite punto o coma decimal y hasta dos decimales.
+- El guardado conserva el formulario si falla y evita envíos simultáneos.
+
+Prueba manual con tu cuenta autorizada:
+
+1. Agrega un producto real con una categoría existente y un código único.
+2. Comprueba que se creó con existencia cero.
+3. Edita su precio y mínimo; recarga y comprueba que persistieron.
+4. Intenta reutilizar su código en otro producto: debe rechazarse.
+5. Cancela un formulario y comprueba que no crea un registro.
+
+Esta etapa no cambia el esquema SQL ni habilita todavía compras o ventas.

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { supabase } from "../lib/supabase";
+import ProductoForm from "../components/ProductoForm";
+import { productoColumns } from "../services/productos";
 import type { Producto } from "../types/producto";
 
 const pageSize = 25;
@@ -9,7 +11,26 @@ const money = new Intl.NumberFormat("es-GT", {
   currency: "GTQ",
 });
 
-export default function Productos() {
+export default function Productos({
+  canManage = false,
+}: {
+  canManage?: boolean;
+}) {
+  const [editor, setEditor] = useState<{ producto: Producto | null } | null>(
+    null,
+  );
+  const [notice, setNotice] = useState("");
+
+  function saved(producto: Producto, editing: boolean) {
+    setEditor(null);
+    setNotice(
+      `${editing ? "Producto actualizado" : "Producto creado"}: ${producto.nombre}.`,
+    );
+    setDraft("");
+    setSearch("");
+    setPage(0);
+    setRefresh((value) => value + 1);
+  }
   const [rows, setRows] = useState<Producto[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -28,10 +49,7 @@ export default function Productos() {
       try {
         let query = supabase
           .from("productos")
-          .select(
-            "id_producto,nombre,codigo_barras,precio_venta,existencia,existencia_minima,activo",
-            { count: "exact" },
-          )
+          .select(productoColumns, { count: "exact" })
           .order("nombre")
           .order("id_producto")
           .range(page * pageSize, (page + 1) * pageSize - 1);
@@ -80,14 +98,31 @@ export default function Productos() {
             Consulta precios y existencias registrados en tu tienda.
           </p>
         </div>
-        <button
-          className="secondary"
-          onClick={() => setRefresh((v) => v + 1)}
-          disabled={loading}
-        >
-          Actualizar
-        </button>
+        <div className="catalog-actions">
+          <button
+            className="secondary"
+            onClick={() => setRefresh((v) => v + 1)}
+            disabled={loading}
+          >
+            Actualizar
+          </button>
+          {canManage && (
+            <button
+              onClick={() => {
+                setNotice("");
+                setEditor({ producto: null });
+              }}
+            >
+              Agregar producto
+            </button>
+          )}
+        </div>
       </div>
+      {notice && (
+        <p className="success" role="status">
+          {notice}
+        </p>
+      )}
       <div className="catalog-card">
         <form className="search-form" onSubmit={filter}>
           <label htmlFor="search">Buscar por nombre</label>
@@ -143,6 +178,7 @@ export default function Productos() {
                       <th className="numeric">Existencia</th>
                       <th className="numeric">Mínimo</th>
                       <th>Estado</th>
+                      {canManage && <th>Acciones</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -171,6 +207,20 @@ export default function Productos() {
                                   : "Disponible"}
                           </span>
                         </td>
+                        {canManage && (
+                          <td>
+                            <button
+                              className="secondary edit-product"
+                              aria-label={`Editar ${product.nombre}`}
+                              onClick={() => {
+                                setNotice("");
+                                setEditor({ producto: product });
+                              }}
+                            >
+                              Editar
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -205,6 +255,13 @@ export default function Productos() {
       <p className="footnote">
         Las existencias se actualizan mediante las operaciones de inventario.
       </p>
+      {canManage && editor && (
+        <ProductoForm
+          producto={editor.producto}
+          onCancel={() => setEditor(null)}
+          onSaved={saved}
+        />
+      )}
     </section>
   );
 }

@@ -266,3 +266,136 @@ td {
     padding: 26px;
   }
 }
+
+.catalog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.success {
+  padding: 14px 18px;
+  background: #e5f4eb;
+  color: #185b3b;
+  border: 1px solid #c0dfca;
+  border-radius: 9px;
+}
+.edit-product {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+.product-dialog {
+  color: #183b35;
+  background: white;
+  width: min(600px, calc(100% - 32px));
+  max-height: calc(100svh - 40px);
+  margin: auto;
+  border: 1px solid #dce6df;
+  border-radius: 18px;
+  padding: 30px;
+  box-shadow: 0 24px 90px #102e3340;
+  overflow-y: auto;
+}
+.product-dialog::backdrop {
+  background: #153e35a6;
+}
+.form-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.close-dialog {
+  padding: 2px 12px !important;
+  font-size: 1.5rem;
+}
+.product-dialog form {
+  margin-top: 22px;
+}
+.product-dialog fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.product-dialog label:not(.checkbox-row) {
+  display: block;
+  font-weight: 650;
+  font-size: 0.85rem;
+  margin: 18px 0 7px;
+}
+.product-dialog input,
+.product-dialog select {
+  font-size: 1rem;
+}
+.product-dialog select {
+  width: 100%;
+  border: 1px solid #c9d8cf;
+  background: white;
+  color: #183b35;
+  padding: 11px 12px;
+  border-radius: 8px;
+}
+.product-dialog select:focus-visible {
+  outline: 3px solid #e2b54b;
+  outline-offset: 3px;
+}
+.product-dialog small {
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 5px;
+}
+.optional {
+  color: #60766c;
+  font-weight: 400;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.checkbox-row input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #146d53;
+}
+.inventory-note {
+  background: #f2f6f3;
+  border-radius: 8px;
+  padding: 13px;
+  font-size: 0.8rem;
+  color: #536e61;
+  margin: 24px 0;
+}
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+@media (max-width: 760px) {
+  .catalog-actions {
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  .catalog-actions button {
+    font-size: 0.75rem;
+    padding: 9px 10px;
+  }
+  .product-dialog {
+    padding: 22px;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
