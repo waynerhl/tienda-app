@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, supabaseConfigurationError } from "./lib/supabase";
 import Login from "./pages/Login";
@@ -8,6 +8,8 @@ import "./App.css";
 import Ventas from "./pages/Ventas";
 import Dashboard from "./pages/Dashboard";
 import Clientes from "./pages/Clientes";
+import Proveedores from "./pages/Proveedores";
+const Efectivo = lazy(() => import("./pages/Efectivo"));
 
 type Profile = { nombre: string; activo: boolean; rol: string };
 
@@ -174,7 +176,46 @@ function SignedIn({ session }: { session: Session }) {
       Clientes y cobros
     </button>
   )}
+  {(profile.rol === "ADMINISTRADOR" || profile.rol === "INVENTARIO") && (
+    <button
+      type="button"
+      className={tab === "proveedores" ? "selected" : "secondary"}
+      aria-current={tab === "proveedores" ? "page" : undefined}
+      onClick={() => setTab("proveedores")}
+    >
+      Proveedores y pagos
+    </button>
+  )}
+  {profile.rol === "ADMINISTRADOR" && (
+    <button
+      type="button"
+      className={tab === "efectivo" ? "selected" : "secondary"}
+      aria-current={tab === "efectivo" ? "page" : undefined}
+      onClick={() => setTab("efectivo")}
+    >
+      Efectivo
+    </button>
+  )}
 </nav>
+
+{profile.rol === "ADMINISTRADOR" && (
+  <div hidden={tab !== "efectivo"}>
+    <Suspense fallback={<p className="state" role="status">Preparando efectivo…</p>}>
+      <Efectivo activo={tab === "efectivo"} revision={catalogVersion} />
+    </Suspense>
+  </div>
+)}
+
+{(profile.rol === "ADMINISTRADOR" || profile.rol === "INVENTARIO") && (
+  <div hidden={tab !== "proveedores"}>
+    <Proveedores
+      userId={session.user.id}
+      activo={tab === "proveedores"}
+      revision={catalogVersion}
+      onChanged={() => setCatalogVersion(value => value + 1)}
+    />
+  </div>
+)}
 
 {(profile.rol === "ADMINISTRADOR" || profile.rol === "CAJERO") && (
   <div hidden={tab !== "clientes"}>
@@ -209,6 +250,7 @@ function SignedIn({ session }: { session: Session }) {
   profile.rol === "INVENTARIO") && (
   <div hidden={tab !== "compras"}>
     <Compras
+      revisionExterna={catalogVersion}
       onRegistered={() =>
         setCatalogVersion((value) => value + 1)
       }

@@ -38,8 +38,10 @@ const nuevoLote = (): LoteCompraForm => ({
 
 export default function Compras({
   onRegistered,
+  revisionExterna,
 }: {
   onRegistered: () => void;
+  revisionExterna: number;
 }) {
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
   const [pagos, setPagos] = useState<FormaPago[]>([]);
@@ -113,7 +115,7 @@ export default function Compras({
     }
     void load();
     return () => controller.abort();
-  }, [refresh]);
+  }, [refresh, revisionExterna]);
 
   useEffect(() => {
     const controller = new AbortController();

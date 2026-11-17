@@ -1,0 +1,54 @@
+.cash-filter input {
+  max-width: 260px;
+}
+.cash-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.cash-stat {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: white;
+  border: 1px solid #dce6df;
+  border-radius: 14px;
+  padding: 22px;
+  overflow-wrap: anywhere;
+}
+.cash-stat span,
+.cash-stat small {
+  color: #60766c;
+  font-size: 0.8rem;
+}
+.cash-stat strong {
+  font-size: clamp(1.4rem, 2vw, 1.9rem);
+  font-variant-numeric: tabular-nums;
+}
+.cash-breakdown {
+  margin: 20px 0 0;
+}
+.cash-breakdown > div {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding: 12px 0;
+  border-bottom: 1px solid #edf1ee;
+}
+.cash-breakdown dd {
+  margin: 0;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 1000px) {
+  .cash-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 500px) {
+  .cash-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
