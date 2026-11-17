@@ -5,6 +5,8 @@ import Login from "./pages/Login";
 import Productos from "./pages/Productos";
 import Compras from "./pages/Compras";
 import "./App.css";
+import Ventas from "./pages/Ventas";
+import Dashboard from "./pages/Dashboard";
 
 type Profile = { nombre: string; activo: boolean; rol: string };
 
@@ -123,43 +125,86 @@ function SignedIn({ session }: { session: Session }) {
         ) : (
           <>
             <nav className="module-nav" aria-label="Módulos de la tienda">
-              <button
-                type="button"
-                className={tab === "productos" ? "selected" : "secondary"}
-                aria-current={tab === "productos" ? "page" : undefined}
-                onClick={() => setTab("productos")}
-              >
-                Productos
-              </button>
-              {(profile.rol === "ADMINISTRADOR" ||
-                profile.rol === "INVENTARIO") && (
-                <button
-                  type="button"
-                  className={tab === "compras" ? "selected" : "secondary"}
-                  aria-current={tab === "compras" ? "page" : undefined}
-                  onClick={() => setTab("compras")}
-                >
-                  Compras
-                </button>
-              )}
-            </nav>
-            <div hidden={tab !== "productos"}>
-              <Productos
-                key={catalogVersion}
-                canManage={
-                  profile.rol === "ADMINISTRADOR" ||
-                  profile.rol === "INVENTARIO"
-                }
-              />
-            </div>
-            {(profile.rol === "ADMINISTRADOR" ||
-              profile.rol === "INVENTARIO") && (
-              <div hidden={tab !== "compras"}>
-                <Compras
-                  onRegistered={() => setCatalogVersion((value) => value + 1)}
-                />
-              </div>
-            )}
+  <button
+    type="button"
+    className={tab === "productos" ? "selected" : "secondary"}
+    onClick={() => setTab("productos")}
+  >
+    Productos
+  </button>
+
+  {(profile.rol === "ADMINISTRADOR" ||
+    profile.rol === "INVENTARIO") && (
+    <button
+      type="button"
+      className={tab === "compras" ? "selected" : "secondary"}
+      onClick={() => setTab("compras")}
+    >
+      Compras
+    </button>
+  )}
+
+  {(profile.rol === "ADMINISTRADOR" ||
+    profile.rol === "CAJERO") && (
+    <button
+      type="button"
+      className={tab === "ventas" ? "selected" : "secondary"}
+      onClick={() => setTab("ventas")}
+    >
+      Ventas
+    </button>
+  )}
+  {profile.rol === "ADMINISTRADOR" && (
+  <button
+    type="button"
+    className={tab === "dashboard" ? "selected" : "secondary"}
+    onClick={() => setTab("dashboard")}
+  >
+    Resumen
+  </button>
+)}
+</nav>
+
+{/* Las pantallas van fuera del nav */}
+<div hidden={tab !== "productos"}>
+  <Productos
+    key={catalogVersion}
+    canManage={
+      profile.rol === "ADMINISTRADOR" ||
+      profile.rol === "INVENTARIO"
+    }
+  />
+</div>
+{profile.rol === "ADMINISTRADOR" && (
+  <div hidden={tab !== "dashboard"}>
+    <Dashboard
+      activo={tab === "dashboard"}
+      revision={catalogVersion}
+    />
+  </div>
+)}
+{(profile.rol === "ADMINISTRADOR" ||
+  profile.rol === "INVENTARIO") && (
+  <div hidden={tab !== "compras"}>
+    <Compras
+      onRegistered={() =>
+        setCatalogVersion((value) => value + 1)
+      }
+    />
+  </div>
+)}
+
+{(profile.rol === "ADMINISTRADOR" ||
+  profile.rol === "CAJERO") && (
+  <div hidden={tab !== "ventas"}>
+    <Ventas
+      userId={session.user.id}
+      onRegistered={() =>
+        setCatalogVersion((value) => value + 1)
+      }
+    />
+  </div>
+)}
           </>
         )}
       </main>

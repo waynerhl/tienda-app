@@ -584,3 +584,134 @@ td {
     grid-template-columns: 1fr;
   }
 }
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.dashboard-card {
+  padding: 24px;
+}
+
+.dashboard-card h2 {
+  font-size: 0.85rem;
+  color: #60766c;
+  margin-bottom: 14px;
+}
+
+.dashboard-card > strong {
+  display: block;
+  font-size: 2rem;
+  letter-spacing: -0.04em;
+}
+
+.dashboard-card p {
+  font-size: 0.8rem;
+  margin: 12px 0 0;
+}
+
+.dashboard-warning {
+  background: #fff4dc;
+  color: #77501b;
+  border: 1px solid #ead2a0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.dashboard-warning p {
+  margin: 8px 0;
+}
+
+.dashboard-bars {
+  list-style: none;
+  padding: 0;
+}
+
+.dashboard-bars li {
+  display: grid;
+  grid-template-columns: 95px minmax(0, 1fr) 110px;
+  gap: 14px;
+  align-items: center;
+  margin: 18px 0;
+  font-size: 0.8rem;
+}
+
+.dashboard-bars strong {
+  text-align: right;
+}
+
+.dashboard-bar-track {
+  height: 18px;
+  background: #edf4ef;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.dashboard-bar {
+  height: 100%;
+  background: #198362;
+  border-radius: 5px;
+}
+
+@media (max-width: 850px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 500px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-bars li {
+    grid-template-columns: 76px minmax(0, 1fr) 85px;
+    gap: 8px;
+    font-size: 0.7rem;
+  }
+}
+
+/* Ajustes para pantallas pequeñas */
+.module-nav {
+  flex-wrap: wrap;
+}
+
+.workspace,
+.workspace > div,
+.purchase-layout > *,
+.dashboard-grid > * {
+  min-width: 0;
+}
+
+.search-controls > input {
+  min-width: 0;
+}
+
+.purchase-panel input,
+.purchase-panel select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 500px) {
+  .section-heading {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .purchase-line-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .purchase-results li > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .form-actions {
+    flex-wrap: wrap;
+  }
+}
