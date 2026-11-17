@@ -15,7 +15,8 @@ sumar el importe completo de la compra o venta. Cada día comprende desde las
 00:00 inclusive hasta las 00:00 del día siguiente, en America/Guatemala.
 
 La variación es entradas menos salidas registradas. No es ganancia ni saldo
-disponible en caja: aún faltan apertura, gastos, retiros personales y arqueo.
+disponible en caja. El módulo Caja incorpora fondo inicial, gastos, retiros,
+aportes y arqueo.
 Esta vista no crea pagos, modifica inventario ni cierra jornadas.
 
 Los totales incluyen todas las páginas; cada página muestra hasta 20 movimientos.

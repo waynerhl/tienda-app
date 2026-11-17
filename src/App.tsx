@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Clientes from "./pages/Clientes";
 import Proveedores from "./pages/Proveedores";
 const Efectivo = lazy(() => import("./pages/Efectivo"));
+const Caja = lazy(() => import("./pages/Caja"));
 
 type Profile = { nombre: string; activo: boolean; rol: string };
 
@@ -196,7 +197,25 @@ function SignedIn({ session }: { session: Session }) {
       Efectivo
     </button>
   )}
+  {profile.rol === "ADMINISTRADOR" && (
+    <button
+      type="button"
+      className={tab === "caja" ? "selected" : "secondary"}
+      aria-current={tab === "caja" ? "page" : undefined}
+      onClick={() => setTab("caja")}
+    >
+      Caja
+    </button>
+  )}
 </nav>
+
+{profile.rol === "ADMINISTRADOR" && (
+  <div hidden={tab !== "caja"}>
+    <Suspense fallback={<p className="state" role="status">Preparando caja…</p>}>
+      <Caja activo={tab === "caja"} revision={catalogVersion} userId={session.user.id} onChanged={() => setCatalogVersion(value => value + 1)} />
+    </Suspense>
+  </div>
+)}
 
 {profile.rol === "ADMINISTRADOR" && (
   <div hidden={tab !== "efectivo"}>

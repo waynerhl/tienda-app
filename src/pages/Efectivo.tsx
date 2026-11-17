@@ -129,8 +129,8 @@ export default function Efectivo({
       <p className="inventory-note">
         Esta vista incluye únicamente pagos en EFECTIVO. La variación es
         entradas menos salidas registradas; no representa la ganancia ni el
-        dinero disponible en caja. Aún falta incorporar apertura, gastos,
-        retiros personales y arqueo.
+        dinero disponible en caja. Consulta Caja para incluir fondo inicial,
+        gastos, retiros, aportes y el conteo de cierre.
       </p>
       {cargando ? (
         <p className="state" role="status">
