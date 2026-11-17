@@ -405,6 +405,37 @@ td {
   gap: 10px;
   margin-bottom: 34px;
 }
+
+/* Clientes y cobros: las tablas conservan su propio desplazamiento. */
+.cobros-section {
+  margin-top: 28px;
+}
+.cobros-texto {
+  overflow-wrap: anywhere;
+}
+.cobros-totales,
+.cobros-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.cobros-totales p {
+  background: #fff;
+  border: 1px solid #dce6df;
+  border-radius: 12px;
+  padding: 18px 24px;
+  flex: 1;
+  min-width: 180px;
+  color: #60766c;
+}
+.cobros-totales strong {
+  display: block;
+  color: #183b35;
+  font-size: 1.6rem;
+}
+.cobros-acciones button {
+  min-height: 44px;
+}
 .purchase-layout {
   display: grid;
   grid-template-columns: 0.85fr 1.15fr;

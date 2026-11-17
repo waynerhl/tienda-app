@@ -7,6 +7,7 @@ import Compras from "./pages/Compras";
 import "./App.css";
 import Ventas from "./pages/Ventas";
 import Dashboard from "./pages/Dashboard";
+import Clientes from "./pages/Clientes";
 
 type Profile = { nombre: string; activo: boolean; rol: string };
 
@@ -163,7 +164,28 @@ function SignedIn({ session }: { session: Session }) {
     Resumen
   </button>
 )}
+  {(profile.rol === "ADMINISTRADOR" || profile.rol === "CAJERO") && (
+    <button
+      type="button"
+      className={tab === "clientes" ? "selected" : "secondary"}
+      aria-current={tab === "clientes" ? "page" : undefined}
+      onClick={() => setTab("clientes")}
+    >
+      Clientes y cobros
+    </button>
+  )}
 </nav>
+
+{(profile.rol === "ADMINISTRADOR" || profile.rol === "CAJERO") && (
+  <div hidden={tab !== "clientes"}>
+    <Clientes
+      userId={session.user.id}
+      activo={tab === "clientes"}
+      revision={catalogVersion}
+      onChanged={() => setCatalogVersion(value => value + 1)}
+    />
+  </div>
+)}
 
 {/* Las pantallas van fuera del nav */}
 <div hidden={tab !== "productos"}>
@@ -199,6 +221,7 @@ function SignedIn({ session }: { session: Session }) {
   <div hidden={tab !== "ventas"}>
     <Ventas
       userId={session.user.id}
+      revisionExterna={catalogVersion}
       onRegistered={() =>
         setCatalogVersion((value) => value + 1)
       }

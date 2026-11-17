@@ -96,9 +96,11 @@ function recuperar(clave: string): {
 
 export default function Ventas({
   userId,
+  revisionExterna,
   onRegistered,
 }: {
   userId: string;
+  revisionExterna: number;
   onRegistered: () => void;
 }) {
   const clave = "tienda:venta-pendiente:" + userId;
@@ -205,7 +207,7 @@ export default function Ventas({
 
     void cargar();
     return () => controller.abort();
-  }, [consulta, revision]);
+  }, [consulta, revision, revisionExterna]);
 
   const metodo = pagos.find(
     (p) => String(p.id_forma_pago) === pago,
