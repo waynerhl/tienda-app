@@ -100,7 +100,7 @@ export default function Efectivo({
           <p className="eyebrow">DINERO REGISTRADO EN LA TIENDA</p>
           <h1>Efectivo del día</h1>
           <p className="muted">
-            Entradas y salidas por ventas, compras y abonos.
+            Entradas y salidas automáticas de la caja de atención.
           </p>
         </div>
         <button
@@ -127,10 +127,10 @@ export default function Efectivo({
         />
       </div>
       <p className="inventory-note">
-        Esta vista incluye únicamente pagos en EFECTIVO. La variación es
+        Esta vista incluye únicamente pagos en EFECTIVO desde o hacia CAJA. Los pagos desde Reserva se consultan en Reserva. La variación es
         entradas menos salidas registradas; no representa la ganancia ni el
         dinero disponible en caja. Consulta Caja para incluir fondo inicial,
-        gastos, retiros, aportes y el conteo de cierre.
+        gastos, retiros, aportes, traslados con Reserva y el conteo de cierre.
       </p>
       {cargando ? (
         <p className="state" role="status">
@@ -145,7 +145,7 @@ export default function Efectivo({
         </div>
       ) : (
         datos && (
-          <section aria-label="Flujo de efectivo" data-fecha={datos.fecha}>
+          <section aria-label="Flujo de caja de atención" data-fecha={datos.fecha}>
             <div className="cash-grid">
               <article className="cash-stat">
                 <span>Entradas de efectivo</span>

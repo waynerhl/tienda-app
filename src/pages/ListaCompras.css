@@ -1,0 +1,19 @@
+.lista-nota {
+  white-space: normal;
+  max-width: 350px;
+  overflow-wrap: anywhere;
+}
+.purchase-panel textarea {
+  width: 100%;
+  min-height: 90px;
+  font: inherit;
+  padding: 11px 12px;
+  border: 1px solid #c9d8cf;
+  border-radius: 8px;
+  color: #183b35;
+  resize: vertical;
+}
+.purchase-panel textarea:focus-visible {
+  outline: 3px solid #e2b54b;
+  outline-offset: 3px;
+}

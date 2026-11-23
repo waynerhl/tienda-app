@@ -24,12 +24,14 @@ export type EstadoCliente = {
   cuentas: Cuenta[];
 };
 export type AbonoPayload = {
+  p_fondo?: "CAJA" | "RESERVA";
   p_solicitud_id: string;
   p_cuenta_id: number;
   p_forma_pago_id: number;
   p_monto: number;
 };
 export type AbonoConfirmado = {
+  fondo_efectivo?: "CAJA" | "RESERVA";
   id_pago: number;
   cuenta_id: number;
   monto: number;

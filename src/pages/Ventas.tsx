@@ -1,3 +1,4 @@
+import { patronBusquedaNombre } from "../services/busquedas";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { supabase } from "../lib/supabase";
@@ -7,7 +8,10 @@ import {
   hoyGuatemala,
 } from "../services/compraValidation";
 
-type Producto = {
+import { calcularPresentacion, tienePaquete } from "../services/presentacionValidation";
+import type { PrecioPresentacion } from "../services/presentacionValidation";
+
+type Producto = PrecioPresentacion & {
   id_producto: number;
   nombre: string;
   codigo_barras: string | null;
@@ -28,6 +32,7 @@ type Payload = {
     producto_id: number;
     cantidad: number;
     precio_esperado: number;
+    paquete_version_esperada?: number;
   }[];
 };
 
@@ -46,11 +51,7 @@ const moneda = new Intl.NumberFormat("es-GT", {
 function totalCentavos(lineas: Linea[]) {
   let total = 0;
   for (const linea of lineas) {
-    const cantidad = cantidadEntera(linea.cantidad);
-    const precio = costoCentavos(
-      String(linea.producto.precio_venta),
-    );
-    total += cantidad * precio;
+    total += calcularPresentacion(linea.producto, linea.cantidad).centavos;
     if (!Number.isSafeInteger(total) || total > 999999999999) {
       throw new Error("El total supera el máximo permitido.");
     }
@@ -79,7 +80,8 @@ function recuperar(clave: string): {
           Number.isInteger(item.producto_id) &&
           Number.isInteger(item.cantidad) &&
           item.cantidad > 0 &&
-          Number.isFinite(item.precio_esperado),
+          Number.isFinite(item.precio_esperado) &&
+          (item.paquete_version_esperada === undefined || (Number.isSafeInteger(item.paquete_version_esperada) && item.paquete_version_esperada >= 0)),
       )
     ) {
       throw new Error("Borrador inválido");
@@ -92,6 +94,13 @@ function recuperar(clave: string): {
         "No pudimos recuperar una operación pendiente. Revisa el historial antes de preparar otra venta.",
     };
   }
+}
+
+function DesglosePresentacion({ producto, cantidad }: { producto: Producto; cantidad: string }) {
+  let d: ReturnType<typeof calcularPresentacion> | null = null;
+  try { d = calcularPresentacion(producto,cantidad); } catch { /* Cantidad incompleta mientras se escribe. */ }
+  if (!d) return <p className="muted">Completa una cantidad válida para calcular el importe.</p>;
+  return <p className="inventory-note">{tienePaquete(producto) ? `${d.paquetes} × ${producto.paquete_nombre} de ${producto.paquete_unidades} + ${d.sueltas} unidades sueltas` : `${d.unidades} unidades`} · <strong>{moneda.format(d.centavos / 100)}</strong></p>;
 }
 
 export default function Ventas({
@@ -144,7 +153,7 @@ export default function Ventas({
         let query = supabase
           .from("productos")
           .select(
-            "id_producto,nombre,codigo_barras,precio_venta,existencia",
+            "id_producto,nombre,codigo_barras,precio_venta,existencia,paquete_nombre,paquete_unidades,paquete_precio,paquete_predeterminado,paquete_version",
           )
           .eq("activo", true)
           .order("nombre")
@@ -156,10 +165,7 @@ export default function Ventas({
             consulta.modo === "codigo_barras"
               ? query.eq("codigo_barras", consulta.texto)
               : query.ilike(
-                  "nombre",
-                  "%" +
-                    consulta.texto.replace(/[\\%_]/g, "\\$&") +
-                    "%",
+                  "nombre_busqueda", patronBusquedaNombre(consulta.texto),
                 );
         }
 
@@ -229,15 +235,16 @@ export default function Ventas({
     // Se completará cuando las cantidades y el efectivo sean válidos.
   }
 
-  function agregar(producto: Producto) {
+  function agregar(producto: Producto, incremento?: number) {
+    const paso = incremento ?? (tienePaquete(producto) && producto.paquete_predeterminado ? Number(producto.paquete_unidades) : 1);
     if (bloqueado) return;
 
     const actual = lineas.find(
       (l) => l.producto.id_producto === producto.id_producto,
     );
     const cantidad = actual
-      ? Number(actual.cantidad || 0) + 1
-      : 1;
+      ? Number(actual.cantidad || 0) + paso
+      : paso;
 
     if (cantidad > producto.existencia) {
       setError("No hay suficiente existencia registrada.");
@@ -252,7 +259,7 @@ export default function Ventas({
               ? { producto, cantidad: String(cantidad) }
               : l,
           )
-        : [...lineas, { producto, cantidad: "1" }],
+        : [...lineas, { producto, cantidad: String(cantidad) }],
     );
   }
 
@@ -310,6 +317,7 @@ export default function Ventas({
             producto_id: linea.producto.id_producto,
             cantidad,
             precio_esperado: Number(linea.producto.precio_venta),
+            paquete_version_esperada: linea.producto.paquete_version ?? 0,
           };
         });
 
@@ -490,19 +498,23 @@ export default function Ventas({
                         {" · "}
                         Existencia registrada: {producto.existencia}
                       </small>
+                      {tienePaquete(producto) && <small>{producto.paquete_nombre} × {producto.paquete_unidades}: {moneda.format(Number(producto.paquete_precio))} · Agregar añade {producto.paquete_predeterminado ? `${producto.paquete_unidades} unidades` : "1 unidad"}.</small>}
                     </div>
+                    <div className="form-actions">
                     <button
                       className="secondary"
                       type="button"
                       disabled={
                         bloqueado ||
                         !!errorCarga ||
-                        producto.existencia < 1
+                        producto.existencia < (tienePaquete(producto) && producto.paquete_predeterminado ? Number(producto.paquete_unidades) : 1)
                       }
                       onClick={() => agregar(producto)}
                     >
                       Agregar
                     </button>
+                    {tienePaquete(producto) && <button type="button" className="secondary" disabled={bloqueado || !!errorCarga || producto.existencia < (producto.paquete_predeterminado ? 1 : Number(producto.paquete_unidades))} onClick={() => agregar(producto,producto.paquete_predeterminado ? 1 : Number(producto.paquete_unidades))}>{producto.paquete_predeterminado ? "+1 unidad" : `+1 ${producto.paquete_nombre} (${producto.paquete_unidades})`}</button>}
+                    </div>
                   </li>
                 ))}
                 {!productos.length && (
@@ -534,7 +546,7 @@ export default function Ventas({
                 <label
                   htmlFor={"sale-qty-" + linea.producto.id_producto}
                 >
-                  Cantidad
+                  Cantidad total en unidades
                 </label>
                 <input
                   id={"sale-qty-" + linea.producto.id_producto}
@@ -555,6 +567,7 @@ export default function Ventas({
                     )
                   }
                 />
+                <DesglosePresentacion producto={linea.producto} cantidad={linea.cantidad} />
                 <button
                   type="button"
                   className="secondary"

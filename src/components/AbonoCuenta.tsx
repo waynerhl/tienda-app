@@ -33,6 +33,7 @@ export default function AbonoCuenta({
   const [formas, setFormas] = useState<FormaAbono[]>([]);
   const [monto, setMonto] = useState("");
   const [forma, setForma] = useState("");
+  const [fondo, setFondo] = useState<"CAJA" | "RESERVA">("CAJA");
   const cuentaId = cuenta?.id_cuenta ?? null;
   const [cuentaAnterior, setCuentaAnterior] = useState(cuentaId);
   if (cuentaAnterior !== cuentaId) {
@@ -84,6 +85,7 @@ export default function AbonoCuenta({
           formas.find((f) => String(f.id_forma_pago) === forma),
           crypto.randomUUID(),
         );
+        if (esPago) payload.p_fondo = formas.find(f => String(f.id_forma_pago) === forma)?.nombre === "EFECTIVO" ? fondo : "CAJA";
         localStorage.setItem(clave, JSON.stringify(payload));
       } catch (e) {
         setError(
@@ -98,8 +100,8 @@ export default function AbonoCuenta({
     setConfirmado(null);
     try {
       const { data, error: fallo } = await supabase.rpc(
-        esPago ? "registrar_abono_cxp" : "registrar_abono_cxc",
-        payload,
+        esPago ? "registrar_abono_cxp_fondo" : "registrar_abono_cxc",
+        esPago ? { ...payload, p_fondo: payload.p_fondo ?? "CAJA" } : payload,
       );
       if (fallo) {
         if (
@@ -113,7 +115,7 @@ export default function AbonoCuenta({
             "P0001",
             "40P01",
             "40001",
-          ].includes(fallo.code)
+          ].includes(fallo.code) && !(pendiente && fallo.code === "42501")
         ) {
           localStorage.removeItem(clave);
           setPendiente(null);
@@ -172,7 +174,7 @@ export default function AbonoCuenta({
       {confirmado && (
         <p className="success" role="status">
           Abono #{confirmado.id_pago} confirmado por {dinero(confirmado.monto)}.
-          Saldo de la cuenta al confirmar: {dinero(confirmado.saldo_pendiente)}.
+          Saldo de la cuenta al confirmar: {dinero(confirmado.saldo_pendiente)}. {esPago && confirmado.fondo_efectivo === "RESERVA" && <>Pagado desde Reserva.</>}
         </p>
       )}
       {recuperado.error && (
@@ -184,7 +186,7 @@ export default function AbonoCuenta({
         <p className="inventory-note" role="status">
           Hay una confirmación pendiente de {dinero(pendiente.p_monto)} para la
           cuenta #{pendiente.p_cuenta_id}. Reintenta para verificar si ya quedó
-          registrada.
+          registrada. {esPago && pendiente.p_fondo === "RESERVA" && <>Desde Reserva.</>}
         </p>
       )}
       {!cuenta && !pendiente ? (
@@ -232,6 +234,7 @@ export default function AbonoCuenta({
                   </div>
                 </div>
               </fieldset>
+              {esPago && formas.find(f => String(f.id_forma_pago) === forma)?.nombre === "EFECTIVO" && <div><label htmlFor="abono-fondo">Pagar efectivo desde</label><select id="abono-fondo" value={fondo} disabled={bloqueado} onChange={e => setFondo(e.target.value as "CAJA" | "RESERVA")}><option value="CAJA">Caja de atención</option><option value="RESERVA">Reserva (administrador)</option></select></div>}
               <p className="footnote">
                 {esPago
                   ? "Confirma únicamente el dinero que ya entregaste al proveedor. El abono reduce la cuenta de esa compra."

@@ -20,6 +20,8 @@ type Cierre = {
   efectivo_contado: number;
   diferencia: number;
   observacion: string;
+  traslados_entrada?: number;
+  traslados_salida?: number;
 };
 type Evento = {
   id_evento: number;
@@ -47,6 +49,8 @@ type EstadoCaja = {
   retiros: number;
   aportes: number;
   saldo_esperado: number | null;
+  traslados_entrada?: number;
+  traslados_salida?: number;
   eventos: Evento[];
 };
 type Confirmada = {
@@ -94,6 +98,7 @@ function ResumenCierre({ cierre }: { cierre: Cierre }) {
           <dd>{dinero(cierre.diferencia)}</dd>
         </div>
       </dl>
+      <p className="footnote">Traslados incluidos en el cierre: desde Reserva {dinero(cierre.traslados_entrada ?? 0)} · hacia Reserva {dinero(cierre.traslados_salida ?? 0)}.</p>
       <p className="footnote">
         {Number(cierre.diferencia) === 0
           ? "La caja coincidió con el conteo."
@@ -538,7 +543,7 @@ export default function Caja({
               Estado: <strong>{datos.caja?.estado ?? "SIN APERTURA"}</strong>.
               El saldo esperado suma el fondo inicial, ventas y cobros en
               efectivo y aportes; resta compras, pagos a proveedores, gastos y
-              retiros.
+              retiros de este fondo. Los traslados con Reserva también modifican este saldo; los pagos hechos desde Reserva se consultan en su módulo.
             </p>
             <div className="cash-grid caja-grid">
               <article className="cash-stat">
@@ -583,6 +588,7 @@ export default function Caja({
                 <small>El conteo físico se registra en el cierre.</small>
               </article>
             </div>
+            <p className="inventory-note">Traslados desde Reserva: {dinero(datos.traslados_entrada ?? 0)} · Traslados hacia Reserva: {dinero(datos.traslados_salida ?? 0)}. Para trasladar o pagar gastos y retiros desde el dinero apartado, abre Reserva.</p>
             {datos.automatico.inconsistencias_total > 0 && (
               <p className="error" role="alert">
                 Hay {datos.automatico.inconsistencias_total} movimientos

@@ -1,0 +1,15 @@
+.rotacion-filtros {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: end;
+  margin-bottom: 20px;
+}
+.rotacion-filtros label { margin-top: 0; }
+.rotacion-filtros input, .rotacion-filtros select { width: 100%; min-width: 0; }
+@media (max-width: 760px) {
+  .rotacion-filtros { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  .rotacion-filtros { grid-template-columns: minmax(0, 1fr); }
+}

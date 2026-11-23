@@ -1,0 +1,68 @@
+-- Prueba completa sin conservar operaciones. Requiere Reserva aún sin inicializar y sin Caja de hoy.
+BEGIN;
+SELECT set_config('test.usuario',(SELECT u.id_usuario::text FROM public.usuarios u JOIN public.roles r ON r.id_rol=u.rol_id WHERE u.activo AND r.nombre='ADMINISTRADOR' LIMIT 1),true);
+SELECT set_config('request.jwt.claims',json_build_object('sub',current_setting('test.usuario'),'role','authenticated')::text,true);
+DO $fixtures$
+DECLARE v_cat integer;v_prov integer;v_prod integer;
+BEGIN
+ ASSERT NOT (SELECT inicializada FROM public.reserva_saldo WHERE id),'La reserva ya tiene datos reales. Ejecuta esta prueba en una base de desarrollo.';
+ ASSERT NOT EXISTS(SELECT 1 FROM public.caja_dias WHERE fecha=(CURRENT_TIMESTAMP AT TIME ZONE 'America/Guatemala')::date),'Caja de hoy ya existe. Ejecuta esta prueba en desarrollo.';
+ INSERT INTO public.categorias(nombre) VALUES('__TEST_RESERVA_CAT__') RETURNING id_categoria INTO v_cat;
+ INSERT INTO public.proveedores(nombre) VALUES('__TEST_RESERVA_PROV__') RETURNING id_proveedor INTO v_prov;
+ INSERT INTO public.productos(categoria_id,nombre,precio_venta) VALUES(v_cat,'__TEST_RESERVA_PROD__',25) RETURNING id_producto INTO v_prod;
+ PERFORM set_config('test.prov',v_prov::text,true);PERFORM set_config('test.prod',v_prod::text,true);
+END;
+$fixtures$;
+SET LOCAL ROLE authenticated;
+DO $test$
+DECLARE v_hoy date:=(CURRENT_TIMESTAMP AT TIME ZONE 'America/Guatemala')::date;v_prod integer:=current_setting('test.prod')::integer;v_prov integer:=current_setting('test.prov')::integer;
+ v_ef integer;v_cr integer;v_tr integer;v_cuenta integer;v_r jsonb;v_id uuid:=gen_random_uuid();v_abono uuid:=gen_random_uuid();v_base numeric;v_stock integer;v_cnt bigint;
+BEGIN
+ SELECT id_forma_pago INTO v_ef FROM public.formas_pago WHERE nombre='EFECTIVO';SELECT id_forma_pago INTO v_cr FROM public.formas_pago WHERE nombre='CREDITO';SELECT id_forma_pago INTO v_tr FROM public.formas_pago WHERE nombre='TRANSFERENCIA';
+ v_base:=(public.obtener_flujo_efectivo(v_hoy,0)->>'variacion')::numeric;
+ PERFORM public.operar_reserva(v_id,'INICIAL',1000,'Efectivo ya separado');
+ v_r:=public.operar_reserva(v_id,'INICIAL',1000,'Efectivo ya separado');ASSERT (v_r->>'repetida')::boolean,'Inicial duplicado';
+ ASSERT (public.obtener_reserva(0)->>'saldo')::numeric=1000,'No cargó inicial';
+ BEGIN PERFORM public.operar_reserva(gen_random_uuid(),'INICIAL',0,'Otra inicial');RAISE EXCEPTION 'Aceptó segundo saldo inicial';EXCEPTION WHEN invalid_parameter_value THEN NULL;END;
+ BEGIN PERFORM public.operar_reserva(gen_random_uuid(),'CAJA_A_RESERVA',1,'Sin apertura');RAISE EXCEPTION 'Trasladó sin caja abierta';EXCEPTION WHEN invalid_parameter_value THEN NULL;END;
+ PERFORM public.operar_caja(gen_random_uuid(),v_hoy,'APERTURA',500,'Fondo cambio');
+ v_id:=gen_random_uuid();PERFORM public.operar_reserva(v_id,'CAJA_A_RESERVA',200,'Apartar excedente');
+ v_r:=public.operar_reserva(v_id,'CAJA_A_RESERVA',200,'Apartar excedente');ASSERT (v_r->>'repetida')::boolean,'No reconoció traslado repetido';
+ ASSERT (public.obtener_reserva(0)->>'saldo')::numeric=1200 AND (public.obtener_caja_dia(v_hoy)->>'saldo_esperado')::numeric=300+v_base,'Traslado duplicó o perdió dinero';
+ PERFORM public.operar_reserva(gen_random_uuid(),'GASTO',100,'Internet de la tienda');PERFORM public.operar_reserva(gen_random_uuid(),'RETIRO_PERSONAL',50,'Uso personal');
+ ASSERT (public.obtener_reserva(0)->>'saldo')::numeric=1050 AND (public.obtener_caja_dia(v_hoy)->>'saldo_esperado')::numeric=300+v_base,'Gasto o retiro desde Reserva alteró Caja';
+ v_r:=public.registrar_compra_fondo(v_prov,v_ef,'TEST-RESERVA-COMPRA',jsonb_build_array(jsonb_build_object('producto_id',v_prod,'cantidad',4,'costo_unitario',20)),null,'RESERVA');
+ ASSERT (public.obtener_reserva(0)->>'saldo')::numeric=970 AND (public.obtener_caja_dia(v_hoy)->>'saldo_esperado')::numeric=300+v_base,'Compra desde Reserva se descontó dos veces';
+ BEGIN PERFORM public.registrar_compra_fondo(v_prov,v_ef,'TEST-RESERVA-COMPRA',jsonb_build_array(jsonb_build_object('producto_id',v_prod,'cantidad',4,'costo_unitario',20)),null,'RESERVA');RAISE EXCEPTION 'Duplicó compra por referencia';EXCEPTION WHEN unique_violation THEN NULL;END;
+ v_r:=public.registrar_compra(v_prov,v_cr,'TEST-RESERVA-CREDITO',jsonb_build_array(jsonb_build_object('producto_id',v_prod,'cantidad',10,'costo_unitario',10)),null);
+ SELECT id_cuenta_por_pagar INTO v_cuenta FROM public.cuentas_por_pagar WHERE compra_id=(v_r->>'id_compra')::integer;
+ PERFORM public.registrar_abono_cxp_fondo(v_abono,v_cuenta,v_ef,30,'RESERVA');
+ v_r:=public.registrar_abono_cxp_fondo(v_abono,v_cuenta,v_ef,30,'RESERVA');ASSERT (v_r->>'repetida')::boolean,'Abono repetido duplicó saldo';
+ BEGIN PERFORM public.registrar_abono_cxp_fondo(v_abono,v_cuenta,v_ef,30,'CAJA');RAISE EXCEPTION 'Cambió fondo en reintento';EXCEPTION WHEN invalid_parameter_value THEN NULL;END;
+ ASSERT (public.obtener_reserva(0)->>'saldo')::numeric=940 AND (SELECT saldo_pendiente=70 FROM public.cuentas_por_pagar WHERE id_cuenta_por_pagar=v_cuenta),'Saldo de reserva o deuda incorrectos';
+ PERFORM public.operar_reserva(gen_random_uuid(),'RESERVA_A_CAJA',100,'Cambio adicional');
+ PERFORM public.registrar_compra(v_prov,v_ef,'TEST-RESERVA-CAJA',jsonb_build_array(jsonb_build_object('producto_id',v_prod,'cantidad',1,'costo_unitario',5)),null);
+ PERFORM public.registrar_abono_cxp(gen_random_uuid(),v_cuenta,v_ef,10);
+ ASSERT (public.obtener_caja_dia(v_hoy)->>'saldo_esperado')::numeric=385+v_base AND (public.obtener_reserva(0)->>'saldo')::numeric=840,'Pagos desde Caja alteraron Reserva';
+ SELECT existencia INTO v_stock FROM public.productos WHERE id_producto=v_prod;SELECT count(*) INTO v_cnt FROM public.compras;
+ BEGIN PERFORM public.registrar_compra_fondo(v_prov,v_ef,'TEST-RESERVA-INSUF',jsonb_build_array(jsonb_build_object('producto_id',v_prod,'cantidad',100,'costo_unitario',20)),null,'RESERVA');RAISE EXCEPTION 'Compra dejó saldo negativo';EXCEPTION WHEN invalid_parameter_value THEN NULL;END;
+ ASSERT (SELECT existencia=v_stock FROM public.productos WHERE id_producto=v_prod) AND (SELECT count(*)=v_cnt FROM public.compras),'Compra fallida dejó inventario o documento';
+ BEGIN PERFORM public.operar_reserva(gen_random_uuid(),'CAJA_A_RESERVA',9999999,'Demasiado');RAISE EXCEPTION 'Caja quedó negativa';EXCEPTION WHEN invalid_parameter_value THEN NULL;END;
+ BEGIN PERFORM public.registrar_compra_fondo(v_prov,v_tr,'TEST-RESERVA-NOEF',jsonb_build_array(jsonb_build_object('producto_id',v_prod,'cantidad',1,'costo_unitario',1)),null,'RESERVA');RAISE EXCEPTION 'Transferencia usó Reserva efectivo';EXCEPTION WHEN invalid_parameter_value THEN NULL;END;
+ PERFORM public.operar_caja(gen_random_uuid(),v_hoy,'CIERRE',385+v_base,'Cierre de prueba');
+ ASSERT (public.obtener_caja_dia(v_hoy)->'caja'->'ultimo_cierre'->>'diferencia')::numeric=0,'Cierre no consideró traslados';
+ ASSERT (public.obtener_caja_dia(v_hoy)->'caja'->'ultimo_cierre'->>'traslados_salida')::numeric=200,'Cierre no conservó traslado';
+ PERFORM public.operar_reserva(gen_random_uuid(),'GASTO',5,'Gasto después del cierre de Caja');
+ PERFORM public.registrar_compra_fondo(v_prov,v_ef,'TEST-RESERVA-CERRADA',jsonb_build_array(jsonb_build_object('producto_id',v_prod,'cantidad',1,'costo_unitario',5)),null,'RESERVA');
+ ASSERT (public.obtener_reserva(0)->>'saldo')::numeric=830 AND (public.obtener_caja_dia(v_hoy)->>'saldo_esperado')::numeric=385+v_base,'Reserva alteró caja cerrada';
+ BEGIN PERFORM public.operar_reserva(gen_random_uuid(),'RESERVA_A_CAJA',1,'Caja cerrada');RAISE EXCEPTION 'Trasladó con Caja cerrada';EXCEPTION WHEN invalid_parameter_value THEN NULL;END;
+ BEGIN PERFORM public.registrar_compra(v_prov,v_ef,'TEST-RESERVA-CAJACERRADA',jsonb_build_array(jsonb_build_object('producto_id',v_prod,'cantidad',1,'costo_unitario',1)),null);RAISE EXCEPTION 'Pagó desde Caja cerrada';EXCEPTION WHEN raise_exception THEN IF SQLERRM='Pagó desde Caja cerrada' THEN RAISE;END IF;END;
+ ASSERT (SELECT saldo=(SELECT sum(reserva_delta) FROM public.reserva_eventos) FROM public.reserva_saldo WHERE id),'Libro y saldo no concilian';
+ BEGIN UPDATE public.reserva_saldo SET saldo=900 WHERE id;RAISE EXCEPTION 'Permitió escritura directa';EXCEPTION WHEN insufficient_privilege THEN NULL;END;
+ PERFORM set_config('request.jwt.claims','{"role":"authenticated"}',true);
+ BEGIN PERFORM public.obtener_reserva(0);RAISE EXCEPTION 'Consultó sin sesión';EXCEPTION WHEN insufficient_privilege THEN NULL;END;
+ ASSERT NOT has_function_privilege('anon','public.operar_reserva(uuid,text,numeric,text)','EXECUTE'),'Permitió anon';
+END;
+$test$;
+ROLLBACK;
+SELECT 'OK: Reserva inicial, traslados, compras, abonos, gastos, retiros, reintentos, fondos, saldos insuficientes, cierre y permisos. Todo revertido.' AS resultado;

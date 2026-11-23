@@ -219,6 +219,7 @@ function HistorialAbonos({
   const [pagos, setPagos] = useState<
     {
       id_pago_cuenta_por_pagar: number;
+      fondo_efectivo?: "CAJA" | "RESERVA";
       fecha: string;
       monto: number;
       forma_pago_id: number;
@@ -236,7 +237,7 @@ function HistorialAbonos({
         const [p, f] = await Promise.all([
           supabase
             .from("pagos_cuentas_por_pagar")
-            .select("id_pago_cuenta_por_pagar,fecha,monto,forma_pago_id")
+            .select("id_pago_cuenta_por_pagar,fecha,monto,forma_pago_id,fondo_efectivo")
             .eq("cuenta_por_pagar_id", cuenta.id_cuenta_por_pagar)
             .order("fecha", { ascending: false })
             .order("id_pago_cuenta_por_pagar", { ascending: false })
@@ -303,6 +304,7 @@ function HistorialAbonos({
                   <td>#{p.id_pago_cuenta_por_pagar}</td>
                   <td>{hora(p.fecha)}</td>
                   <td>
+                    {formas.find(f => f.id_forma_pago === p.forma_pago_id)?.nombre === "EFECTIVO" && <span className="history-date">Desde {p.fondo_efectivo ?? "CAJA"}</span>}
                     {formas.find((f) => f.id_forma_pago === p.forma_pago_id)
                       ?.nombre ?? "—"}
                   </td>

@@ -1,0 +1,38 @@
+.reporte-filtro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: end;
+}
+.reporte-filtro label {
+  margin-top: 0;
+}
+.reporte-grafica {
+  margin: 0;
+}
+.reporte-grafica svg {
+  display: block;
+  width: 100%;
+  height: 180px;
+  overflow: visible;
+}
+.reporte-grafica figcaption,
+.reporte-escala {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  color: #60766c;
+  font-size: 0.8rem;
+}
+.reporte-escala {
+  margin-bottom: 12px;
+}
+.reporte-grafica circle:hover {
+  fill: #e2b54b;
+}
+@media (max-width: 600px) {
+  .reporte-filtro {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

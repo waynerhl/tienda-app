@@ -27,6 +27,7 @@ export interface FormaPago {
   nombre: string;
 }
 export interface CompraResumen {
+  fondo_efectivo?: "CAJA" | "RESERVA";
   id_compra: number;
   proveedor_id: number;
   forma_pago_id: number;
@@ -36,11 +37,13 @@ export interface CompraResumen {
   estado: string;
 }
 export interface CompraGuardada {
+  fondo_efectivo?: "CAJA" | "RESERVA";
   id_compra: number;
   total: number;
   estado: string;
 }
 export interface CompraPayload {
+  p_fondo?: "CAJA" | "RESERVA";
   p_proveedor_id: number;
   p_forma_pago_id: number;
   p_numero_documento: string;

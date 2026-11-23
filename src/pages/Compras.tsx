@@ -1,3 +1,4 @@
+import { patronBusquedaNombre } from "../services/busquedas";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { supabase } from "../lib/supabase";
@@ -51,6 +52,7 @@ export default function Compras({
   const [refresh, setRefresh] = useState(0);
   const [proveedor, setProveedor] = useState("");
   const [pago, setPago] = useState("");
+  const [fondo, setFondo] = useState<"CAJA" | "RESERVA">("CAJA");
   const [documento, setDocumento] = useState(referencia);
   const [fecha, setFecha] = useState("");
   const [lines, setLines] = useState<LineaCompraForm[]>([]);
@@ -91,7 +93,7 @@ export default function Compras({
           supabase
             .from("compras")
             .select(
-              "id_compra,proveedor_id,forma_pago_id,numero_documento,fecha,total,estado",
+              "id_compra,proveedor_id,forma_pago_id,numero_documento,fecha,total,estado,fondo_efectivo",
             )
             .order("fecha", { ascending: false })
             .order("id_compra", { ascending: false })
@@ -138,8 +140,7 @@ export default function Compras({
             query.by === "codigo_barras"
               ? request.eq("codigo_barras", query.text)
               : request.ilike(
-                  "nombre",
-                  `%${query.text.replace(/[\\%_]/g, "\\$&")}%`,
+                  "nombre_busqueda", patronBusquedaNombre(query.text),
                 );
         const { data, error } = await request.abortSignal(controller.signal);
         if (controller.signal.aborted) return;
@@ -225,7 +226,7 @@ export default function Compras({
       );
       lock.current = true;
       setSaving(true);
-      const result = await registrarCompra(payload);
+      const result = await registrarCompra({ ...payload, p_fondo: pagos.find(p => String(p.id_forma_pago) === pago)?.nombre === "EFECTIVO" ? fondo : "CAJA" });
       setSaved(result);
       setLines([]);
       setDocumento(referencia());
@@ -392,6 +393,12 @@ export default function Compras({
                 Usa el número de factura o conserva la referencia generada si no
                 tienes documento.
               </small>
+              {pagos.find(p => String(p.id_forma_pago) === pago)?.nombre === "EFECTIVO" && <>
+                <label htmlFor="purchase-fondo">Pagar efectivo desde</label>
+                <select id="purchase-fondo" value={fondo} onChange={e => setFondo(e.target.value as "CAJA" | "RESERVA")} disabled={saving}>
+                  <option value="CAJA">Caja de atención</option><option value="RESERVA">Reserva (administrador)</option>
+                </select><p className="footnote">Reserva requiere saldo inicial y efectivo suficiente. Este pago se descuenta una sola vez del fondo elegido.</p>
+              </>}
               <label htmlFor="purchase-payment">Forma de pago *</label>
               <select
                 id="purchase-payment"
@@ -764,6 +771,7 @@ export default function Compras({
                     </td>
                     <td>{compra.numero_documento || "Sin referencia"}</td>
                     <td>
+                      <span className="history-date">{pagos.find(p => p.id_forma_pago === compra.forma_pago_id)?.nombre === "EFECTIVO" ? `Desde ${compra.fondo_efectivo ?? "CAJA"}` : ""}</span>
                       {pagos.find(
                         (p) => p.id_forma_pago === compra.forma_pago_id,
                       )?.nombre ?? "—"}

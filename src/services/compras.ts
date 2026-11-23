@@ -5,7 +5,7 @@ export async function registrarCompra(
   payload: CompraPayload,
 ): Promise<CompraGuardada> {
   if (!supabase) throw new Error("La conexión no está configurada.");
-  const { data, error } = await supabase.rpc("registrar_compra", payload);
+  const { data, error } = await supabase.rpc("registrar_compra_fondo", { ...payload, p_fondo: payload.p_fondo ?? "CAJA" });
   if (error) {
     if (error.code === "23505")
       throw new Error(

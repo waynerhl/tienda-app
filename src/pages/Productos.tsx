@@ -1,6 +1,8 @@
+import { patronBusquedaNombre } from "../services/busquedas";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { supabase } from "../lib/supabase";
+import PresentacionForm from "../components/PresentacionForm";
 import ProductoForm from "../components/ProductoForm";
 import { productoColumns } from "../services/productos";
 import type { Producto } from "../types/producto";
@@ -19,6 +21,7 @@ export default function Productos({
   const [editor, setEditor] = useState<{ producto: Producto | null } | null>(
     null,
   );
+  const [presentacion,setPresentacion] = useState<Producto|null>(null);
   const [notice, setNotice] = useState("");
 
   function saved(producto: Producto, editing: boolean) {
@@ -55,8 +58,7 @@ export default function Productos({
           .range(page * pageSize, (page + 1) * pageSize - 1);
         if (search)
           query = query.ilike(
-            "nombre",
-            `%${search.replace(/[\\%_]/g, "\\$&")}%`,
+            "nombre_busqueda", patronBusquedaNombre(search),
           );
         const { data, count, error } = await query.abortSignal(
           controller.signal,
@@ -190,6 +192,7 @@ export default function Productos({
                         </td>
                         <td className="numeric">
                           {money.format(Number(product.precio_venta))}
+                          {product.paquete_unidades && <span className="history-date">{product.paquete_nombre} × {product.paquete_unidades}: {money.format(Number(product.paquete_precio))}</span>}
                         </td>
                         <td className="numeric">{product.existencia}</td>
                         <td className="numeric">{product.existencia_minima}</td>
@@ -219,6 +222,7 @@ export default function Productos({
                             >
                               Editar
                             </button>
+                            <button className="secondary" aria-label={`Presentación de ${product.nombre}`} onClick={() => setPresentacion(product)}>Presentación</button>
                           </td>
                         )}
                       </tr>
@@ -255,6 +259,7 @@ export default function Productos({
       <p className="footnote">
         Las existencias se actualizan mediante las operaciones de inventario.
       </p>
+      {canManage && presentacion && <PresentacionForm producto={presentacion} onCancel={() => setPresentacion(null)} onSaved={p => {setPresentacion(null);setNotice(`Presentación actualizada: ${p.nombre}. Actualiza los datos de Ventas antes de volver a agregarlo.`);setRefresh(v => v + 1);}} />}
       {canManage && editor && (
         <ProductoForm
           producto={editor.producto}

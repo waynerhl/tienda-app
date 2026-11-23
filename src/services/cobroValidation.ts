@@ -63,6 +63,7 @@ export function recuperarAbono(clave: string): {
     const p = JSON.parse(texto) as AbonoPayload;
     if (
       !p ||
+      (p.p_fondo !== undefined && !["CAJA", "RESERVA"].includes(p.p_fondo)) ||
       typeof p.p_solicitud_id !== "string" ||
       !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
         p.p_solicitud_id,

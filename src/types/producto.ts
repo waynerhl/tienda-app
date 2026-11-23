@@ -1,4 +1,9 @@
 export interface Producto {
+  paquete_nombre?: string | null;
+  paquete_unidades?: number | null;
+  paquete_precio?: number | null;
+  paquete_predeterminado?: boolean;
+  paquete_version?: number;
   id_producto: number;
   categoria_id: number;
   nombre: string;

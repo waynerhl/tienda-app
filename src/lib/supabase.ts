@@ -8,7 +8,7 @@ const key = (
 
 function configurationError(): string | null {
   if (!url || !key)
-    return "Falta configurar la URL y la clave pública de Supabase en .env.local.";
+    return "Falta configurar la URL y la clave pública de Supabase.";
   try {
     if (new URL(url).protocol !== "https:")
       return "La URL de Supabase debe comenzar con https://.";

@@ -3,7 +3,7 @@ import type { Producto, ProductoFormValues } from "../types/producto";
 import { mensajeErrorProducto, validarProducto } from "./productoValidation";
 
 export const productoColumns =
-  "id_producto,categoria_id,nombre,codigo_barras,precio_venta,existencia,existencia_minima,activo,controla_lotes";
+  "id_producto,categoria_id,nombre,codigo_barras,precio_venta,existencia,existencia_minima,activo,controla_lotes,paquete_nombre,paquete_unidades,paquete_precio,paquete_predeterminado,paquete_version";
 
 export async function guardarProducto(
   values: ProductoFormValues,
